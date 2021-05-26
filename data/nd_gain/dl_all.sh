@@ -16,7 +16,7 @@ die() {
     exit 1
 }
 
-dl_page() {
+dl_data() {
     log "Scraping download page"
     link=$(curl -s "https://gain.nd.edu/our-work/country-index/download-data/" \
             | grep "DOWNLOAD ND-GAIN DATA" \
@@ -25,13 +25,18 @@ dl_page() {
             | tr '=' '\n' \
         | grep zip | tr -d '"')
     [ ! -z "$link" ] && log "Download link found!" || die "Download link not found :("
-    echo $link
-    curl "https://gain.nd.edu$link" -O
+    cd $DLDIR
+    curl -s "https://gain.nd.edu$link" -O && log "Downloaded zipped file" || die "Download failed :( ; command attempted: curl -s "https://gain.nd.edu$link" -O"
+}
+
+unzip_data() {
+    log "Unzipping data"
+    unzip $DLDIR/$(basename $link) -d $DLDIR/$(date +'%Y-%m-%d')_ndgain > /dev/null
 }
 
 
 main() {
-    DLDIR="./"
+    DLDIR="."
     for i in "$@"; do
         case $i in
             -d|--dldir)
@@ -53,7 +58,8 @@ main() {
     done
     log  " " " " "Downloading Notre Dame's Global Adaptation Index"
     log "Download directory:" "$DLDIR"
-    dl_page
+    dl_data
+    unzip_data
 }
 
 main "$@"
